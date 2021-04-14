@@ -1,15 +1,13 @@
+## Prerequisites
+- A default VPC, or a VPC with a public Subnet and a Internet Gateway attached
+- An IAM user with an AWS Access Key and an AWS Secret Key
+- 
 ## Setup a Cloud9 work environment
 - Environment type: Create a new EC2 instance for environment (direct access)
 - Instance type: t2.micro (1 GiB RAM + 1 vCPU)
 - Platform: *Ubuntu Server 18.04 LTS*
-- Create new VPC and select it (press refresh, circular arrow)
-  - Name tag: e.g: work
-  - IPv4 CIDR block: e.g: 10.0.0.0/16
-- Create new subnet
-  - VPC ID: select the VPC you just created
-  - IPv4 CIDR block: e.g: 10.0.0.0/24
-  - Key: Name
-  - Value: work
+- You must have a default VPC, or a VPC with a public Subnet and a Internet Gateway attached
+   
 ### Register for Cloud One in Marketplace
 login  
 select Cloud One Workload Security  
@@ -20,34 +18,56 @@ To Do
 
 ## Configure AWS Systems Manager
 #see also: https://cloudone.trendmicro.com/docs/workload-security/aws-systems-manager/#protect-your-computers
+
 ### create Parameters for Trend Micro Cloud One Workload Security
-```	AWS Services -> AWS Systems Manager -> Parameter store
+```	AWS Services -> AWS Systems Manager (-> Get started with Systems Manager) -> Parameter store -> Create parameter
+		NAME:				VALUE:
 		dsActivationUrl 	dsm://agents.deepsecurity.trendmicro.com:443/
 		dsManagerUrl 	    https://app.deepsecurity.trendmicro.com:443
 		dsTenantId 	        <your_tenant_id>
 		dsToken             <your_ds_token>
 ```
 ### create a Distributor
- 		AWS -> Systems Manager -> Distributor -> Third Party -> Trend Micro -> Install on Schedule  
+ 		AWS -> Systems Manager -> Distributor -> Third Party -> TrendMicro-CloudOne-WorkloadSecurity -> Install on Schedule  
 		name: (e.g.) DistributorForDsaForC1ws  
 		Action: Install  
 		Installation Type: In-place update  
 		Name: TrendMicro-CloudOne-WorkloadSecurity  
 		Targets: Specify instance tags  
-			c1ws :  enabled  "ADD" (dont forget to click the Add button !!)
+			Tag key: c1ws 
+			Tag value: enabled 
+			"ADD" (dont forget to click the Add button !!)
+		keep everything else default
 		Create Association  
 		In the next screen, Select the Association you just created -> click "View Details" -> Execution history (tab) -> Success (this can take a while)  
 
-### create instanceProfile for SSM
-```
+### create instanceProfile for SSM  
+
 export AWS_INSTANCEPROFILE_FOR_SSM='instanceProfileForSSM'
-#export AWS_SERVICEROLE_FOR_SSM='AWSServiceRoleForAmazonSSM'
-export AWS_SERVICEROLE_FOR_SSM='AmazonSSMRoleForInstancesQuickSetup'
+export AWS_SERVICEROLE_FOR_SSM='ServiceRoleForSSM'  #this is an existing Role
+#export AWS_SERVICEROLE_FOR_SSM='AmazonSSMRoleForInstancesQuickSetup'
+
+cat  <<-EOF  >./SSMassumeRolePolicy.json
+{
+  "Version": "2012-10-17",
+  "Statement": {
+    "Effect": "Allow",
+    "Principal": { "Service": "ec2.amazonaws.com" },
+    "Action": "sts:AssumeRole"
+  }
+}
+EOF
+cat ./SSMassumeRolePolicy.json
+
+aws iam create-role --role-name ${AWS_SERVICEROLE_FOR_SSM} --assume-role-policy-document file://./SSMassumeRolePolicy.json
+aws iam attach-role-policy --role-name ${AWS_SERVICEROLE_FOR_SSM} --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+aws iam attach-role-policy --role-name ${AWS_SERVICEROLE_FOR_SSM} --policy-arn arn:aws:iam::aws:policy/AmazonSSMPatchAssociation
+
 aws iam create-instance-profile --instance-profile-name ${AWS_INSTANCEPROFILE_FOR_SSM}
 aws iam add-role-to-instance-profile --instance-profile-name ${AWS_INSTANCEPROFILE_FOR_SSM} --role-name ${AWS_SERVICEROLE_FOR_SSM}
-#aws iam remove-role-from-instance-profile --instance-profile-name ${AWS_INSTANCEPROFILE_FOR_SSM} --role-name ${AWS_SERVICEROLE_FOR_SSM}                                
-#aws iam delete-instance-profile --instance-profile-name ${AWS_INSTANCEPROFILE_FOR_SSM}
-```
+
+
+
 
 ## Create and auto-protect new instances
 
@@ -144,3 +164,18 @@ go to https://cloudone.trendmicro.com/home
 login
 select Cloud One Workload Security
 
+
+
+### to delete the role run the following commands
+
+###aws ec2 disassociate-iam-instance-profile --association-id iip-assoc-?????
+###aws iam describe-IamInstanceProfileAssociations ???
+
+aws iam remove-role-from-instance-profile --instance-profile-name ${AWS_INSTANCEPROFILE_FOR_SSM} --role-name ${AWS_SERVICEROLE_FOR_SSM}  
+aws iam detach-role-policy --role-name ${AWS_SERVICEROLE_FOR_SSM} --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+aws iam detach-role-policy --role-name ${AWS_SERVICEROLE_FOR_SSM} --policy-arn arn:aws:iam::aws:policy/AmazonSSMPatchAssociation
+
+#not needed; fails aws iam delete-role-policy --role-name ${AWS_SERVICEROLE_FOR_SSM}  --policy-name AmazonSSMManagedInstanceCore
+#not needed; fails aws iam delete-role-policy --role-name ${AWS_SERVICEROLE_FOR_SSM}  --policy-name AmazonSSMPatchAssociation
+aws iam delete-role --role-name ${AWS_SERVICEROLE_FOR_SSM}
+aws iam delete-instance-profile --instance-profile-name ${AWS_INSTANCEPROFILE_FOR_SSM}
