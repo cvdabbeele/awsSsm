@@ -21,14 +21,14 @@ dsToken                 <your_ds_token> (see agent deployment script)
 ```
 
 ## Create a Distributor
-AWS -> Systems Manager -> Distributor -> Third Party -> TrendMicro-CloudOne-WorkloadSecurity -> Install on Schedule  
+AWS -> Systems Manager -> Distributor -> Third Party -> TrendMicro-CloudOne-WorkloadSecurity -> Install on a Schedule  
 ![awsSsmCreateDistributor](images/awsSsmCreateDistributor.png)  
  
 ## Create Association
 The numbers refer to the screenshots below:  
 		1. name: (e.g.) DistributorForDsaForC1ws  
 		2. Action: Install  
-		3. Installation Type: In-place update  (!change this from the default setting)
+		3. Installation Type: In-place update  (!change this from the default setting)   
 		4. Name: TrendMicro-CloudOne-WorkloadSecurity  
 		5. Targets: Specify instance tags  
 		6.	Tag key: c1ws  
@@ -104,13 +104,31 @@ Now that the AWS SSM agent is installed, we can connect directly to the EC2 inst
 Wait until the instance has completely initialized, select it and press connect
 ![awsEc2ConnectStep1](images/awsEc2ConnectStep1.png)
     
-Select the Sessions Manger tab and notice that the "Connect" button is available.
-Click it
+Select the Sessions Manger tab and notice that the "Connect" button is available.  
+Click it  
 ![awsEc2ConnectStep2](images/awsEc2ConnectStep2.png)
      
 Once connected, verify that the Deep Security Agent is running.
 ![awsEc2DsaIsRunning](images/awsEc2DsaIsRunning.png)  
 
+Verify if the Cloud One Worklod Security agent is running
+```
+sudo ps -ef | grep ds_
+```
+Check the logs of the AWS SSM agent  
+```
+   sudo less /var/log/amazon/ssm/amazon-ssm-agent.log
+```
+To see if the SSM agent is online, run:
+```
+    curl http://169.254.169.254
+ ```
+
+To restart the AWS agent, run
+``` 
+     sudo systemctl restart amazon-ssm-agent
+```
+   
 Go to Cloud One Workload Security and verify that the Computer is protected.
 ![awsEC2IsProtected](images/awsEC2IsProtected.png)
 
@@ -122,3 +140,50 @@ Results of a recommendation can be auto-assigned to the instances
 
 ## Using the steps outlined above, new EC2 instances can be "born secure"
 
+
+## Important Notes for other platforms
+
+Theis procedure requires that the AWS SSM agent is available in the AMI  
+
+The Trnd Micro plugin for AWS SSM requires that the AWS cli is available in the AMI.  This is not the case for Ubuntu and Windows images.  However it can esaliy be installed using userdata.  
+
+Below are examples on how to do that for Ubuntu (20) and Windows (2016)
+
+### create user-data file for ubuntu images
+Creating the userdata:
+```
+cat <<EOF >${AWS_PROJECT}_user-data.sh
+#!/bin/bash
+sudo snap install aws-cli --classic
+PATH=/snap/bin:$PATH
+EOF
+```
+
+###Creating an Ubuntu20 instance using the userdata  
+```
+aws ec2 run-instances --subnet-id ${SNID1} --security-group-ids ${SGID1} --image-id $AWS_AMI_UBUNTU20_ID --count 1 --instance-type t2.micro --user-data file://${AWS_PROJECT}_user-data.sh --iam-instance-profile Name=${AWS_INSTANCEPROFILE_FOR_SSM} --key-name $AWS_KEYNAME  
+
+aws ec2 create-tags --resources ${$AWS_EC2_UBUNTU20_ID} --tags Key=Name,Value=${AWS_PROJECT}Ubuntu20 Key=${TAGKEY1},Value=${TAGVALUE1} Key=${TAGKEYSSM},Value=${TAGVALUESSM}  
+
+```
+
+
+## create user-data file for windows images
+```
+cat <<EOF > ${AWS_PROJECT}_user-data-win.ps1
+<powershell>
+mkdir c:\temp
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+Invoke-WebRequest -Uri "https://awscli.amazonaws.com/AWSCLIV2.msi" -UseBasicParsing -outfile c:\temp\AWSCLIV2.msi
+dir c:\temp\AWSCLIV2.msi
+Start-Process msiexec -argumentlist '/i "c:\temp\awscliv2.msi" /qb /l*v C:\temp\awscliv2install.log'
+</powershell>
+EOF
+```
+
+## Instantiate a Windows Server 2016
+```
+aws ec2 run-instances --image-id $(aws ssm get-parameters --names /aws/service/ami-windows-latest/Windows_Server-2016-English-Full-Base  --query 'Parameters[0].[Value]' --output text) --subnet-id ${SNID1} --security-group-ids ${SGID1} --user-data file://${AWS_PROJECT}_user-data-win.ps1  --iam-instance-profile Name=${AWS_INSTANCEPROFILE_FOR_SSM}  --key-name $AWS_KEYNAME --count 1 --instance-type m4.large   
+
+aws ec2 create-tags --resources $AWS_EC2_WIN2016_ID --tags Key=Name,Value=${AWS_PROJECT}Win2016 Key=${TAGKEY1},Value=${TAGVALUE1}  Key=${TAGKEYSSM},Value=${TAGVALUESSM}
+```
