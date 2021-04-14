@@ -143,13 +143,13 @@ Results of a recommendation can be auto-assigned to the instances
 
 ## Important Notes for other platforms
 
-Theis procedure requires that the AWS SSM agent is available in the AMI  
+This procedure requires that the *AWS SSM agent* is available in the AMI.  This is the case for most AMIs.  
 
-The Trnd Micro plugin for AWS SSM requires that the AWS cli is available in the AMI.  This is not the case for Ubuntu and Windows images.  However it can esaliy be installed using userdata.  
+The Trend Micro plugin for AWS SSM requires that the *AWS cli* is available in the AMI.  This is *not* always the case.  e.g. Ubuntu and Windows images do not come with the AWScli.  However it can esaliy be installed using userdata.  
 
 Below are examples on how to do that for Ubuntu (20) and Windows (2016)
 
-### create user-data file for ubuntu images
+### Create user-data file for ubuntu images
 Creating the userdata:
 ```
 cat <<EOF >${AWS_PROJECT}_user-data.sh
@@ -159,7 +159,7 @@ PATH=/snap/bin:$PATH
 EOF
 ```
 
-###Creating an Ubuntu20 instance using the userdata  
+### Instantiate an Ubuntu20 instance   
 ```
 aws ec2 run-instances --subnet-id ${SNID1} --security-group-ids ${SGID1} --image-id $AWS_AMI_UBUNTU20_ID --count 1 --instance-type t2.micro --user-data file://${AWS_PROJECT}_user-data.sh --iam-instance-profile Name=${AWS_INSTANCEPROFILE_FOR_SSM} --key-name $AWS_KEYNAME  
 
@@ -168,7 +168,7 @@ aws ec2 create-tags --resources ${$AWS_EC2_UBUNTU20_ID} --tags Key=Name,Value=${
 ```
 
 
-## create user-data file for windows images
+## Create the user-data file for Windows images
 ```
 cat <<EOF > ${AWS_PROJECT}_user-data-win.ps1
 <powershell>
