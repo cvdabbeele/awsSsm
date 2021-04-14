@@ -15,9 +15,9 @@ Create the following 4 parameters as indicated below the screenshot
 ```
 NAME:				VALUE:
 dsActivationUrl 	dsm://agents.deepsecurity.trendmicro.com:443/
-dsManagerUrl 	    https://app.deepsecurity.trendmicro.com:443
+dsManagerUrl 	        https://app.deepsecurity.trendmicro.com:443
 dsTenantId 	        <your_tenant_id> (see agent deployment script)
-dsToken             <your_ds_token> (see agent deployment script)
+dsToken                 <your_ds_token> (see agent deployment script)
 ```
 
 ## Create a Distributor
