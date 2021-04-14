@@ -1,46 +1,52 @@
-## Introduction
-This repo describes how to setup AWS Systems Manager to automatically deploy the Trend Micro Cloud One Workload Security Agent (C1WSA) to any EC2 that has specific tags.   
-This would happen at the creation time or later when the matching tag is added (in that case, the EC2 requires a reboot to load the AWS SSM agent)  
+## Born Secure
+This repo describes how Trend Micro Cloud One Workload Security can ensure that new EC2 instances in AWS are created with 7 different security controls enabled and a recommendation scan that is automatically 
+This not only "virtually patches" the endpoint, it also assign appropriate rules for Intrusion Prevention, Integrity Monitoring, Log Inspection and Anti Malware.
+
+This setup leverages AWS Systems Manager to automatically deploy the Trend Micro Cloud One Workload Security Agent (C1WSA) to any EC2 that has specific tags.   
+This happens at the creation of the EC2 instance or later when the matching tag is added (in that case, the EC2 requires a reboot to load the AWS SSM agent)  
 
 ## Configure AWS Systems Manager
 #see also: https://cloudone.trendmicro.com/docs/workload-security/aws-systems-manager/#protect-your-computers  
 
-### Create AWS SSM Parameters for Trend Micro Cloud One Workload Security  
+## Create AWS SSM Parameters for Trend Micro Cloud One Workload Security  
 AWS Services -> AWS Systems Manager (-> Get started with Systems Manager) -> Parameter store -> Create parameter  
 Create the following 4 parameters as indicated below the screenshot  
 ![awsSsmParameters](images/awsSsmParameters.png)  
 ```
-		NAME:				VALUE:
-		dsActivationUrl 	dsm://agents.deepsecurity.trendmicro.com:443/
-		dsManagerUrl 	    https://app.deepsecurity.trendmicro.com:443
-		dsTenantId 	        <your_tenant_id> (see agent deployment script)
-		dsToken             <your_ds_token> (see agent deployment script)
+NAME:				VALUE:
+dsActivationUrl 	dsm://agents.deepsecurity.trendmicro.com:443/
+dsManagerUrl 	    https://app.deepsecurity.trendmicro.com:443
+dsTenantId 	        <your_tenant_id> (see agent deployment script)
+dsToken             <your_ds_token> (see agent deployment script)
 ```
 
-### Create a Distributor
+## Create a Distributor
 AWS -> Systems Manager -> Distributor -> Third Party -> TrendMicro-CloudOne-WorkloadSecurity -> Install on Schedule  
 ![awsSsmCreateDistributor](images/awsSsmCreateDistributor.png)  
  
-### Create Association
-The numbers refer to the screenshots below
+## Create Association
+The numbers refer to the screenshots below:  
 		1. name: (e.g.) DistributorForDsaForC1ws  
 		2. Action: Install  
-		3. Installation Type: In-place update  
+		3. Installation Type: In-place update  (!change this from the default setting)
 		4. Name: TrendMicro-CloudOne-WorkloadSecurity  
 		5. Targets: Specify instance tags  
-		6.	Tag key: c1ws 
-		7.	Tag value: enabled 
-		8.	"ADD" (dont forget to click the Add button !!)
-		keep everything else default
-		9. Create Association  
-		In the next screen, Select the Association you just created -> click "View Details" -> Execution history (tab) -> Success (this can take a while)  
+		6.	Tag key: c1ws  
+		7.	Tag value: enabled   
+		8.	"ADD" (dont forget to click the Add button !!)  
+		keep everything else default  
+		9. Create Association    
+
 
 ![awsSsmCreateAssociationPart1](images/awsSsmCreateAssociationPart1.png)  
 ![awsSsmCreateAssociationPart2](images/awsSsmCreateAssociationPart2.png)  
 ![awsSsmCreateAssociationPart3](images/awsSsmCreateAssociationPart3.png)  
 ![awsSsmCreateAssociationPart4](images/awsSsmCreateAssociationPart4.png) 
 
-### Create an instanceProfile for SSM  
+In the next screen, Select the Association you just created -> click "View Details" -> Execution history (tab) -> Success (this can take a while)  
+
+
+## Create an instanceProfile for SSM  
 ```
 export AWS_INSTANCEPROFILE_FOR_SSM='instanceProfileForSSM'
 export AWS_SERVICEROLE_FOR_SSM='ServiceRoleForSSM'  #this is an existing Role
@@ -68,7 +74,7 @@ aws iam add-role-to-instance-profile --instance-profile-name ${AWS_INSTANCEPROFI
 
 ```
 
-### Create a keypair
+## Create a keypair
 Create a keypair or use an existing one
 ```
 export AWS_KEYNAME="myKeyPair
@@ -93,20 +99,26 @@ AWS Services -> EC2 -> Launch Instance ->
 ![awsEc2CreateAmzonLinuxStep7](images/awsEc2CreateAmzonLinuxStep7.png)  
 
 ## Connect to the Instance
-Now that the AWS SSM agent is installed, we can connect directly to the EC2 instance using the Session Manager. (no password nor SSH keypair needed)
+Now that the AWS SSM agent is installed, we can connect directly to the EC2 instance using the Session Manager. (no password nor SSH keypair needed)   
+    
 Wait until the instance has completely initialized, select it and press connect
-	![awsEc2ConnectStep1](images/awsEc2ConnectStep1.png)
+![awsEc2ConnectStep1](images/awsEc2ConnectStep1.png)
+    
 Select the Sessions Manger tab and notice that the "Connect" button is available.
 Click it
 ![awsEc2ConnectStep2](images/awsEc2ConnectStep2.png)
-Once connected, verify that the Deep Security Agent is running
-![awsEc2DsaIsRunning](images/awsEc2DsaIsRunning.png)
+     
+Once connected, verify that the Deep Security Agent is running.
+![awsEc2DsaIsRunning](images/awsEc2DsaIsRunning.png)  
 
-Go to Cloud One Workload Security and verify that the Computer is protected
+Go to Cloud One Workload Security and verify that the Computer is protected.
 ![awsEC2IsProtected](images/awsEC2IsProtected.png)
 
 If you have an event-based task that, upon creation of the image, auto-assigns a policy that has "Perform ongoing Recomendation Scans" turned on, then a recommendation scan is triggered as soon as the new instance comes online.
 ![OngoingRecommendation](images/OngoingRecommendation.png)
+
+Results of a recommendation can be auto-assigned to the instances
 ![AutoAssignRecoRules](images/AutoAssignRecoRules.png)
 
+## Using the steps outlined above, new EC2 instances can be "born secure"
 
