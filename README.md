@@ -1,3 +1,7 @@
+## Introduction
+This repo describes how to setup AWS Systems Manager to automatically deploy the Trend Micro Cloud One Workload Security Agent (C1WSA) to any EC2 that has specific tags.   
+This would happen at the creation time or later when the matching tag is added (in that case, the EC2 requires a reboot to load the AWS SSM agent)
+
 ## Prerequisites
 - A default VPC, or a VPC with a public Subnet and a Internet Gateway attached
 - An IAM user with an AWS Access Key and an AWS Secret Key
