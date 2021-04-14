@@ -36,7 +36,7 @@ The numbers refer to the screenshots below:
 		8.	"ADD" (dont forget to click the Add button !!)  
 		keep everything else default  
 		9. Create Association    
-
+ 
 
 ![awsSsmCreateAssociationPart1](images/awsSsmCreateAssociationPart1.png)  
 ![awsSsmCreateAssociationPart2](images/awsSsmCreateAssociationPart2.png)  
