@@ -53,6 +53,7 @@ To provide the needed rights for AWS Systems Manager to actually manage the EC2 
 2. attach the required policies to it (to give it permissions)
 3. create an Instance Profile
 4. attach the Role to the Instance Profile
+5. at creation time of new EC2 instances, this Instance Profile needs to be assigned to the EC2
 
 
 
