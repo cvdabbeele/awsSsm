@@ -47,6 +47,15 @@ In the next screen, Select the Association you just created -> click "View Detai
 
 
 ## Create an instanceProfile for SSM  
+
+To provide the needed rights for AWS Systems Manager to actually manage the EC2 instances, an "instance profile" needs to be attached to the EC2 instance.  An instance profile is basially a wrapper around an IAM role.  So we will:
+1. create a Role
+2. attach the required policies to it (to give it permissions)
+3. create an Instance Profile
+4. attach the Role to the Instance Profile
+
+
+
 ```
 export AWS_INSTANCEPROFILE_FOR_SSM='instanceProfileForSSM'
 export AWS_SERVICEROLE_FOR_SSM='ServiceRoleForSSM'  #this is an existing Role
@@ -99,7 +108,7 @@ AWS Services -> EC2 -> Launch Instance ->
 ![awsEc2CreateAmzonLinuxStep7](images/awsEc2CreateAmzonLinuxStep7.png)  
 
 ## Connect to the Instance
-Now that the AWS SSM agent is installed, we can connect directly to the EC2 instance using the Session Manager. (no password nor SSH keypair needed)   
+Now that the AWS SSM agent is installed, we can connect directly to the EC2 instance using the *Session Manager*. (no password nor SSH keypair needed, nor any Security Group)   
     
 Wait until the instance has completely initialized, select it and press connect
 ![awsEc2ConnectStep1](images/awsEc2ConnectStep1.png)
@@ -111,7 +120,7 @@ Click it
 Once connected, verify that the Deep Security Agent is running.
 ![awsEc2DsaIsRunning](images/awsEc2DsaIsRunning.png)  
 
-Verify if the Cloud One Worklod Security agent is running
+Verify if the Cloud One Workload Security agent is running
 ```
 sudo ps -ef | grep ds_
 ```
@@ -168,7 +177,7 @@ aws ec2 create-tags --resources ${$AWS_EC2_UBUNTU20_ID} --tags Key=Name,Value=${
 ```
 
 
-## Create the user-data file for Windows images
+### Create the user-data file for Windows images
 ```
 cat <<EOF > ${AWS_PROJECT}_user-data-win.ps1
 <powershell>
@@ -181,7 +190,7 @@ Start-Process msiexec -argumentlist '/i "c:\temp\awscliv2.msi" /qb /l*v C:\temp\
 EOF
 ```
 
-## Instantiate a Windows Server 2016
+### Instantiate a Windows Server 2016
 ```
 aws ec2 run-instances --image-id $(aws ssm get-parameters --names /aws/service/ami-windows-latest/Windows_Server-2016-English-Full-Base  --query 'Parameters[0].[Value]' --output text) --subnet-id ${SNID1} --security-group-ids ${SGID1} --user-data file://${AWS_PROJECT}_user-data-win.ps1  --iam-instance-profile Name=${AWS_INSTANCEPROFILE_FOR_SSM}  --key-name $AWS_KEYNAME --count 1 --instance-type m4.large   
 
