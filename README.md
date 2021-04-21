@@ -34,15 +34,15 @@ The numbers refer to the screenshots below:
 		6.	Tag key: c1ws  
 		7.	Tag value: enabled   
 		8.	"ADD" (dont forget to click the Add button !!)  
-		keep everything else default  
+		keep everything else default.  
 		9. Create Association    
  
-
+ 
 ![awsSsmCreateAssociationPart1](images/awsSsmCreateAssociationPart1.png)  
 ![awsSsmCreateAssociationPart2](images/awsSsmCreateAssociationPart2.png)  
 ![awsSsmCreateAssociationPart3](images/awsSsmCreateAssociationPart3.png)  
 ![awsSsmCreateAssociationPart4](images/awsSsmCreateAssociationPart4.png) 
-
+  
 In the next screen, Select the Association you just created -> click "View Details" -> Execution history (tab) -> Success (this can take a while)  
 
 
@@ -59,7 +59,7 @@ To provide the needed rights for AWS Systems Manager to actually manage the EC2 
 
 ```
 export AWS_INSTANCEPROFILE_FOR_SSM='instanceProfileForSSM'
-export AWS_SERVICEROLE_FOR_SSM='ServiceRoleForSSM'  #this is an existing Role
+export AWS_SERVICEROLE_FOR_SSM='ServiceRoleForSSM'   
 
 cat  <<-EOF  >./SSMassumeRolePolicy.json
 {
