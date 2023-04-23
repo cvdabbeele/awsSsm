@@ -1,3 +1,6 @@
+
+# This project has been deprecated in June 2022
+
 ∏◊https://cloudone.trendmicro.com/?disable-accountsv2## Born Secure
 This repo describes how Trend Micro Cloud One Workload Security can ensure that new EC2 instances in AWS are created with 7 different security controls enabled and a recommendation(/vulnerability) scan that is started automatically
 This not only "virtually patches" the endpoint, it also assigns appropriate rules for Intrusion Prevention, Integrity Monitoring, Log Inspection and Anti Malware.
